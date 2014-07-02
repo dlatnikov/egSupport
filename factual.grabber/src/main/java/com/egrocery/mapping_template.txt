@@ -1,0 +1,70 @@
+Done: created table Category with CategoryId - CategoryName
+
+products-factual.impex
+
+$catalog-id=raleysProductCatalog
+$catalog-version=Staged
+$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]
+INSERT_UPDATE Product;code[unique=true];name[lang=en];description[name=en];ean;approvalstatus(code);unit(code);sellbyCode;deptNumber;$catalog_version
+
+
+FORMAT:
+DEFINED:
+unit = getUnit({size});
+
+sellbyCode = isWeightUnit(unit) ? "E" : "W"
+ - E - buy by entity
+ - W - buy by weight
+DEFAULT: unit = pieces, sellbyCode = E.
+
+\n
+;code{=upc};name{=product_name};description{=product_name};ean{=ean13};approvalstatus{="approved"};unit{"oz"};sellbyCode{"E"};deptNumber{"9"};
+
+
+categories-factual.impex
+
+$contentCatalog=raleysContentCatalog
+$contentCV=catalogVersion(CatalogVersion.catalog(Catalog.id[default=$contentCatalog]),CatalogVersion.version[default=Online])[default=$contentCatalog:Staged]
+$catalogversion=catalogversion(catalog(id),version)[unique=true,default=raleysProductCatalog:Staged]
+
+INSERT_UPDATE RegularCategory;code[unique=true];name[lang=en];allowedPrincipals(uid)[default='customergroup'];$catalogversion
+
+FORMAT:
+\n
+;code{"s"+Category.categoryId};name{category};
+
+
+prodcat-factual.impex
+
+
+$catalog-id=raleysProductCatalog
+$catalog-version=Staged
+$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]
+$source=source(code, $catalog_version)[unique=true]
+$target=target(code, $catalog_version)[unique=true]
+$YCL=catalog-id='$catalog-id',catalog-version='$catalog-version',translator=com.raleys.dataimport.translator.DclCategoryTranslator;
+INSERT_UPDATE CategoryProductRelation;$source;$target
+
+Format:
+;{"s"+Category.categoryId};{upc};
+
+
+price-row-factual.impex
+
+E.G.: grocery store number
+{
+    $store1=420
+    $store2=421
+}
+
+TODO: Define algorithm for multi price row insertion
+
+"$catalog-id=raleysProductCatalog"
+"$catalog-version=Staged"
+"$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]"
+$store1=420
+$store2=421
+
+"INSERT_UPDATE RaleysPriceRow";"Product(code,$catalog_version)[unique=true]";"store(groceryStoreNo)[unique=true]";"dateRange[unique=true,dateformat=yyyyMMdd]";"minqtd";"price";"promoType";"promoForQuantity";"promoPrice";"promoStart";"promoEnd";"saveAmount";"promoPriceText";"aisleNumber";"aisleSide";"ageRestriction";"crvAmount";"salesTaxRate";"unit(code)[default=pieces]";"currency(isocode)[default=USD]";"net[default=true]";"$catalog_version"
+FORMAT:
+;{upc};{random: "420", "421"};{"20131127,20990101"};{"1"};{avg_price};{"0"};;;;;{".00"};{"You Save .00"};{"3"};{"B"};{"0"};{" 0.30"};{" 0.08500"}

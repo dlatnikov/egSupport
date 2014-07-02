@@ -1,0 +1,21 @@
+"INSERT_UPDATE RaleysPriceRow";"Product(code,$catalog_version)[unique=true]";"store(groceryStoreNo)[unique=true]";"dateRange[unique=true,dateformat=yyyyMMdd]";"minqtd";"price";"promoType";"promoForQuantity";"promoPrice";"promoStart";"promoEnd";"saveAmount";"promoPriceText";"aisleNumber";"aisleSide";"ageRestriction";"crvAmount";"salesTaxRate";"unit(code)[default=pieces]";"currency(isocode)[default=USD]";"net[default=true]";"$catalog_version"
+;885898000079;421;20131127,20990101;1;95.71;"x";"1";"90.00";"20131120";"20141212";"5.71";"You Save 5.71";3;B;0; 0.30; 0.08500;
+
+"Product(code,$catalog_version)[unique=true]" - upc = {885898000079}
+"store(groceryStoreNo)[unique=true]" - store number = 420 || 421
+"dateRange[unique=true,dateformat=yyyyMMdd]" - date range = 20131127,20990101
+"minqtd" - QUANTITY =1
+"price" - generated price = {"5.71"}
+"promoType" - promotion type = 1 || 2 || 3
+"promoForQuantity" = "1"
+"promoPrice" - generated price for promotion less then price = {"90.00"}
+"promoStart" - start date - "20131120"
+"promoEnd" - end date - "20141212"
+"saveAmount" - amount your saved = "price - promoPrice"
+"promoPriceText" - text = "You Save 'saveAmount'"
+//leave value as earlier
+"aisleNumber"
+"aisleSide"
+"ageRestriction"
+"crvAmount"
+"salesTaxRate"
