@@ -26,18 +26,18 @@ public class DataExporter {
     public static void main(String[] args) throws SQLException, FileNotFoundException {
 //        fillCategoriesTable(ConnectionManager.getConnection());
         writeToFile(productsFileName, productsFileStaticHead, "", productDataExtractor());
-        writeToFile(categoriesFileName, categoriesFileStaticHead, "", categoryDataExtractor());
-        writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
-        writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
-        writeToFile(sizeFacetFileName, sizeFacetFileStaticHead, "", sizeFacetDataExtractor());
-        writeToFile(nutrientsFileName, nutrientFileStaticHead, "", nutrientDataExtractor());
+//        writeToFile(categoriesFileName, categoriesFileStaticHead, "", categoryDataExtractor());
+//        writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
+//        writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
+//        writeToFile(sizeFacetFileName, sizeFacetFileStaticHead, "", sizeFacetDataExtractor());
+//        writeToFile(nutrientsFileName, nutrientFileStaticHead, "", nutrientDataExtractor());
     }
 
     private static List<List<String>> productDataExtractor() throws SQLException {
         List<List<String>> rows = new ArrayList<>();
 
         String basicProductDataQuery = "select upc code, product_name name, product_name description, ean13 ean," +
-                " \"approved\" approvalstatus, size, \"9\" deptNumber, brand from `products-cpg-nutrition`";
+                " \"approved\" approvalstatus, size, \"9\" deptNumber, brand, ingredients from `products-cpg-nutrition`";
 
 
         Connection connection = ConnectionManager.getConnection();
@@ -45,7 +45,7 @@ public class DataExporter {
         ResultSet resultSet = productStatement.executeQuery(basicProductDataQuery);
 
         while (resultSet.next()) {
-            ArrayList<String> row = new ArrayList<>(8);
+            List<String> row = new ArrayList<>();
             row.add(resultSet.getString("code"));
             row.add(resultSet.getString("name"));
             row.add(resultSet.getString("description"));
@@ -64,6 +64,13 @@ public class DataExporter {
             row.add(resultSet.getString("brand"));
 
             row.add(resultSet.getString("description"));
+
+            //remove unnecessary symbols
+            String ingredients = resultSet.getString("ingredients");
+            if (ingredients != null) {
+                ingredients = ingredients.replaceAll("\"", "").replaceAll("\\[", "").replaceAll("\\]", "");
+            }
+            row.add(ingredients);
 
             rows.add(row);
         }
@@ -329,7 +336,7 @@ public class DataExporter {
     private static String productsFileStaticHead = "$catalog-id=raleysProductCatalog\n" +
             "$catalog-version=Staged\n" +
             "$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]\n" +
-            "INSERT_UPDATE Product;code[unique=true];name[lang=en];description[name=en];ean;approvalstatus(code);unit(code);sellbyCode;deptNumber;manufacturerName;productDetails;$catalog_version";
+            "INSERT_UPDATE Product;code[unique=true];name[lang=en];description[name=en];ean;approvalstatus(code);unit(code);sellbyCode;deptNumber;manufacturerName;productDetails;ingredients;$catalog_version";
 
     private static String categoriesFileStaticHead = "$contentCatalog=raleysContentCatalog\n" +
             "$contentCV=catalogVersion(CatalogVersion.catalog(Catalog.id[default=$contentCatalog]),CatalogVersion.version[default=Online])[default=$contentCatalog:Staged]\n" +
