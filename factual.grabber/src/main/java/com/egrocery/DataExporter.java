@@ -1,12 +1,15 @@
 package com.egrocery;
 
 import com.egrocery.DO.PromotionDO;
+import com.google.api.client.repackaged.com.google.common.base.Strings;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.sql.*;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Created by akolesnik on 6/20/14.
@@ -18,6 +21,7 @@ public class DataExporter {
     private static String prodcatFileName = fileFolder + "/prodcat-factual.impex";
     private static String pricerowFileName = fileFolder + "/price-row-factual.impex";
     private static String sizeFacetFileName = fileFolder + "/size-factual.impex";
+    private static String nutrientsFileName = fileFolder + "/nutrient-factual.impex";
 
     public static void main(String[] args) throws SQLException, FileNotFoundException {
 //        fillCategoriesTable(ConnectionManager.getConnection());
@@ -26,6 +30,7 @@ public class DataExporter {
         writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
         writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
         writeToFile(sizeFacetFileName, sizeFacetFileStaticHead, "", sizeFacetDataExtractor());
+        writeToFile(nutrientsFileName, nutrientFileStaticHead, "", nutrientDataExtractor());
     }
 
     private static List<List<String>> productDataExtractor() throws SQLException {
@@ -63,6 +68,43 @@ public class DataExporter {
             rows.add(row);
         }
 
+        return rows;
+    }
+
+    private static List<List<String>> nutrientDataExtractor() throws SQLException {
+        List<List<String>> rows = new ArrayList<>();
+
+        String basicCategoryDataQuery = "select ean13, calories,fat_calories,total_fat,sat_fat,polyunsat_fat," +
+                "monounsat_fat,trans_fat,cholesterol,sodium,potassium,total_carb,dietary_fiber,soluble_fiber," +
+                "insoluble_fiber,sugar_alcohol,sugars,protein,calcium,iron,vitamin_a,vitamin_c " +
+                "from `products-cpg-nutrition`";
+
+        Connection connection = ConnectionManager.getConnection();
+        Statement productStatement = connection.createStatement();
+        ResultSet resultSet = productStatement.executeQuery(basicCategoryDataQuery);
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+        while (resultSet.next()) {
+
+            for (int i = 2; i <= resultSetMetaData.getColumnCount(); i++) {
+                List<String> row = new ArrayList<>();
+                String columnName = resultSetMetaData.getColumnName(i);
+                row.add(columnName + ":0");
+                String nutrient = resultSet.getString(columnName);
+                if (!Strings.isNullOrEmpty(nutrient)) {
+                    row.add(nutrient);
+                    row.add("g");
+                } else {
+                    row.add("0");
+                    row.add("n/a");
+                }
+                row.add("");
+                row.add("0");
+                row.add("0");
+                row.add(resultSet.getString("ean13"));
+                rows.add(row);
+            }
+        }
         return rows;
     }
 
@@ -216,7 +258,7 @@ public class DataExporter {
     }
 
     private static String getUnit(String size) {
-        if(size == null) {
+        if (size == null) {
             return "oz";
         }
 
@@ -246,7 +288,7 @@ public class DataExporter {
             add("kg");
         }};
 
-        if(unitWeightTypeList.contains(unit.toLowerCase())){
+        if (unitWeightTypeList.contains(unit.toLowerCase())) {
             return "W";
         }
 
@@ -317,5 +359,6 @@ public class DataExporter {
             "\n" +
             "UPDATE Product;code[unique=true];packSize;extendedSize;uom;$catalog_version\n";
 
+    private static String nutrientFileStaticHead = "INSERT_UPDATE Nutrient;master(name,type)[unique=true];quantity[default='0'];uom[default='n/a'];pct;isOrContains;valuePreparedType;ean[unique=true]\n";
 }
 
