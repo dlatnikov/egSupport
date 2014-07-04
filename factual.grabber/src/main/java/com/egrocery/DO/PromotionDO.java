@@ -16,7 +16,8 @@ public class PromotionDO {
     private String saveAmount;
     private String priceText;
 
-    private static Random random = new Random();
+    // seed is important to have repeatability
+    private static Random random = new Random(1234);
 
 //    public Double getBasePrice() {
 //        return basePrice;
@@ -56,8 +57,14 @@ public class PromotionDO {
     public static PromotionDO getPromotion(Double price) {
         PromotionDO promotion = new PromotionDO();
         double promoPrice = 0.01;
-//       "promoType" - promotion type = 0[no promo] || 1 || 2 || 3
-        promotion.type = random.nextInt(5);
+//       "promoType" - promotion type = 0[no promo] || 1 [On special] || 2 [Price drop] || 3 [Dailies]
+        // 0 should come more often
+        for (int i=0; i<3; i++) {
+            promotion.type = random.nextInt(4);
+            if (promotion.type.equals(0)) {
+                break;
+            }
+        }
 
 //        "promoForQuantity" = "1"
         promotion.forQuantity = 1;
@@ -73,12 +80,17 @@ public class PromotionDO {
         }
 
 //    "promoPrice" - generated price for product with promotion, promo price should be less then general price = {"90.00"}
-        if (price > 10.) {
-            promoPrice = price.intValue();
-        } else if (price < 10. && price > 1.) {
-            promoPrice = 1.00;
-        } else if (price < 1.) {
-            promoPrice = 0.01;
+        if (promotion.type.equals(1)) {
+            // on special
+            promoPrice = price * 0.9;
+        } else if (promotion.type.equals(2)) {
+            // price drop
+            promoPrice = price * 0.8;
+        } else if (promotion.type.equals(3)) {
+            // dailies
+            promoPrice = price * 0.95;
+        } else {
+            promoPrice = price;
         }
 
         DecimalFormat df = new DecimalFormat("##.##");

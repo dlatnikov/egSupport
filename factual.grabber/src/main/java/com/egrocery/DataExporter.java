@@ -15,7 +15,7 @@ import java.util.Random;
  * Created by akolesnik on 6/20/14.
  */
 public class DataExporter {
-    private static String fileFolder = "/Users/Yama/work/gd/hybris/egrocery/impex_export";
+    private static String fileFolder = "./output";
     private static String productsFileName = fileFolder + "/products-factual.impex";
     private static String categoriesFileName = fileFolder + "/categories-factual.impex";
     private static String prodcatFileName = fileFolder + "/prodcat-factual.impex";
@@ -165,64 +165,72 @@ public class DataExporter {
         Statement productStatement = connection.createStatement();
         ResultSet resultSet = productStatement.executeQuery(basicProdcatDataQuery);
 
-        Random random = new Random();
-        int store1 = 420;
-        int store2 = 421;
-        DecimalFormat df = new DecimalFormat("###");
+        // seed is important to have repeatability
+        Random random = new Random(1234);
+        List<Integer> storeIndexes = new ArrayList<>();
+        storeIndexes.add(420);
+        storeIndexes.add(421);
 
         PromotionDO promotion;
+        Double price;
 
         while (resultSet.next()) {
-            ArrayList<String> row = new ArrayList<>();
-//    "Product(code,$catalog_version)[unique=true]" - upc = {885898000079}
-            row.add(resultSet.getString("upc"));
-//    "store(groceryStoreNo)[unique=true]" - store number = 420 || 421
-            row.add(Integer.valueOf(df.format((store1 + (store2 - store1) * random.nextDouble()))).toString());
-//    "dateRange[unique=true,dateformat=yyyyMMdd]" - date range = 20131127,20990101
-            row.add("20131127,20990101");
-//    "minqtd" - QUANTITY =1
-            row.add("1");
-//    "price" - generated price = {avg_price}
-            row.add(resultSet.getString("avg_price"));
+            for (Integer store : storeIndexes) {
+                ArrayList<String> row = new ArrayList<>();
+    //    "Product(code,$catalog_version)[unique=true]" - upc = {885898000079}
+                row.add(resultSet.getString("upc"));
+    //    "store(groceryStoreNo)[unique=true]" - store number = 420 || 421
+                //row.add(Integer.valueOf(df.format((store1 + (store2 - store1) * random.nextDouble()))).toString());
+                row.add(store.toString());
+    //    "dateRange[unique=true,dateformat=yyyyMMdd]" - date range = 20131127,20990101
+                row.add("20131127,20990101");
+    //    "minqtd" - QUANTITY =1
+                row.add("1");
+    //    "price" - generated price = {avg_price}
+                price = Double.valueOf(resultSet.getString("avg_price"));
+                price *= random.nextDouble() * (1.05 - 0.95) + 0.95;
+                price = Math.round(price * 100) / 100.0;
+                row.add(price.toString());
 
-            promotion = PromotionDO.getPromotion(Double.valueOf(resultSet.getString("avg_price")));
-//BEGIN PROMOTION DATA
-//    "promoType" - promotion type = 0[- no promo] || 1 || 2 || 3
-//            row.add("0");
-            row.add(promotion.getType().toString());
-//    "promoForQuantity" = "1"
-//            row.add("1");
-            row.add(promotion.getForQuantity().toString());
-//    "promoPrice" - generated price for product with promotion, promo price should be less then general price = {"90.00"}
-//            row.add("");
-            row.add(promotion.getPromoPrice());
-//    "promoStart" - start date - "20131120"
-//            row.add("");
-            row.add(promotion.getStartDate());
-//    "promoEnd" - end date - "20141212"
-//            row.add("");
-            row.add(promotion.getEndDate());
-//    "saveAmount" - amount your saved = "price - promoPrice"
-//            row.add(".00");
-            row.add(promotion.getSaveAmount());
-//    "promoPriceText" - text = "You Save 'saveAmount'"
-//            row.add("You Save .00");
-            row.add(promotion.getPriceText());
-//END PROMOTION DATA
+                promotion = PromotionDO.getPromotion(price);
+    //BEGIN PROMOTION DATA
+    //    "promoType" - promotion type = 0[- no promo] || 1 || 2 || 3
+    //            row.add("0");
+                row.add(promotion.getType().toString());
+    //    "promoForQuantity" = "1"
+    //            row.add("1");
+                row.add(promotion.getForQuantity().toString());
+    //    "promoPrice" - generated price for product with promotion, promo price should be less then general price = {"90.00"}
+    //            row.add("");
+                row.add(promotion.getPromoPrice());
+    //    "promoStart" - start date - "20131120"
+    //            row.add("");
+                row.add(promotion.getStartDate());
+    //    "promoEnd" - end date - "20141212"
+    //            row.add("");
+                row.add(promotion.getEndDate());
+    //    "saveAmount" - amount your saved = "price - promoPrice"
+    //            row.add(".00");
+                row.add(promotion.getSaveAmount());
+    //    "promoPriceText" - text = "You Save 'saveAmount'"
+    //            row.add("You Save .00");
+                row.add(promotion.getPriceText());
+    //END PROMOTION DATA
 
 
-//            "aisleNumber" = {"3"}
-            row.add("3");
-//            "aisleSide" = {"B"}
-            row.add("B");
-//            "ageRestriction" = {"0"}
-            row.add("0");
-//            "crvAmount" = {" 0.30"}
-            row.add(" 0.30");
-//            "salesTaxRate" = {" 0.08500"}
-            row.add(" 0.08500");
+    //            "aisleNumber" = {"3"}
+                row.add("3");
+    //            "aisleSide" = {"B"}
+                row.add("B");
+    //            "ageRestriction" = {"0"}
+                row.add("0");
+    //            "crvAmount" = {" 0.30"}
+                row.add(" 0.30");
+    //            "salesTaxRate" = {" 0.08500"}
+                row.add(" 0.08500");
 
-            rows.add(row);
+                rows.add(row);
+            }
         }
 
         return rows;
