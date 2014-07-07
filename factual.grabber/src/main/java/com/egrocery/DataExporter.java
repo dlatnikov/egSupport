@@ -6,7 +6,6 @@ import com.google.api.client.repackaged.com.google.common.base.Strings;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.sql.*;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -67,8 +66,10 @@ public class DataExporter {
 
             //remove unnecessary symbols
             String ingredients = resultSet.getString("ingredients");
-            if (ingredients != null) {
+            if (!Strings.isNullOrEmpty(ingredients)) {
                 ingredients = ingredients.replaceAll("\"", "").replaceAll("\\[", "").replaceAll("\\]", "");
+            }else {
+                ingredients="";
             }
             row.add(ingredients);
 
