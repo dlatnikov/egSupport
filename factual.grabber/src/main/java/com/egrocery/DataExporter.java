@@ -169,7 +169,7 @@ public class DataExporter {
         // seed is important to have repeatability
         Random random = new Random(1234);
         List<Integer> storeIndexes = new ArrayList<>();
-        storeIndexes.add(420);
+        storeIndexes.add(420); // default shop - should always exist
         storeIndexes.add(421);
 
         PromotionDO promotion;
@@ -229,6 +229,13 @@ public class DataExporter {
                 row.add(" 0.30");
     //            "salesTaxRate" = {" 0.08500"}
                 row.add(" 0.08500");
+
+                // necessary for demo
+                // two products will be not available in one store
+                if (!store.equals(420) &&
+                        ((resultSet.getString("upc").equals("070569272408")) || (resultSet.getString("upc").equals("072310008236")))) {
+                    continue;
+                }
 
                 rows.add(row);
             }
