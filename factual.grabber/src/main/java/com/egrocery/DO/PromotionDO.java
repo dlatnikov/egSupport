@@ -7,7 +7,6 @@ import java.util.Random;
  * Created by akolesnik on 7/1/14.
  */
 public class PromotionDO {
-    //    private Double basePrice;
     private Integer type;
     private String promoPrice;
     private Integer forQuantity;
@@ -18,10 +17,6 @@ public class PromotionDO {
 
     // seed is important to have repeatability
     private static Random random = new Random(1234);
-
-//    public Double getBasePrice() {
-//        return basePrice;
-//    }
 
     public String getPromoPrice() {
         return promoPrice;
@@ -110,14 +105,4 @@ public class PromotionDO {
 
         return promotion;
     }
-
-//    public static void main(String[] args) {
-//        for (int i = 0; i < 20; i++) {
-//            double minPrice = 1;
-//            double maxPrice = 10;
-//            double priceValue = minPrice + (maxPrice - minPrice) * random.nextDouble();
-//            DecimalFormat df = new DecimalFormat("##.##");
-//            System.out.println(Double.valueOf(df.format(priceValue)).intValue());
-//        }
-//    }
 }
