@@ -37,6 +37,9 @@ public class DataExporter {
         writeToFile(productsFileName, productsFileStaticHead, "", productDataExtractor());
 //        writeToFile(categoriesFileName, categoriesFileStaticHead, "", categoryDataExtractor());
 //        writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
+//        writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
+//        writeToFile(sizeFacetFileName, sizeFacetFileStaticHead, "", sizeFacetDataExtractor());
+//        writeToFile(nutrientsFileName, nutrientFileStaticHead, "", nutrientDataExtractor());
 
         writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
 //
@@ -562,7 +565,7 @@ public class DataExporter {
             sz = sz.substring(0, delimiterIndex);
         }
         sz = sz.replace("\"", "").replace("[", "").replace("]", "");
-        sz = sz.substring(sz.lastIndexOf(" ") + 1, sz.length());
+        sz = sz.substring(sz.indexOf(" ") + 1, sz.length());
         //End parsing
 
         return sz;
@@ -677,7 +680,7 @@ public class DataExporter {
             "$catalog-version=Staged\n" +
             "$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]\n" +
             "\n" +
-            "UPDATE Product;code[unique=true];packSize;itemSize;extendedSize;uom;$catalog_version\n";
+            "UPDATE Product;code[unique=true];packSize;extendedSize;uom;$catalog_version\n";
 
     private static String valuePreparedFileStaticHead = "INSERT_UPDATE ValuePrepared; code[unique=true]; valuePreparedType;addedItem; servingSizeText; servingSizeUOM ; servingsPerContainer ;ean\n";
 
