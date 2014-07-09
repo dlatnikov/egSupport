@@ -13,15 +13,15 @@ import java.util.Random;
 
 /**
  * Factual java api info:
- *  https://github.com/Factual/factual-java-driver/
- *  https://github.com/Factual/factual-java-driver/wiki/Getting-Started
- *  https://github.com/Factual/factual-java-driver/wiki/Query-Filters
+ * https://github.com/Factual/factual-java-driver/
+ * https://github.com/Factual/factual-java-driver/wiki/Getting-Started
+ * https://github.com/Factual/factual-java-driver/wiki/Query-Filters
  * Factual site address:
- *  https://www.factual.com/
+ * https://www.factual.com/
  * Factual product categories list:
- *  http://developer.factual.com/working-with-product-categories/
+ * http://developer.factual.com/working-with-product-categories/
  * Link to catalog:
- *  https://www.factual.com/data/t/products-cpg-nutrition
+ * https://www.factual.com/data/t/products-cpg-nutrition
  */
 public class FactualGrabber {
 
@@ -31,6 +31,11 @@ public class FactualGrabber {
 
     public static void main(String[] args) throws InterruptedException {
 
+        long offset = 0;
+        storeRowsByOffset(offset);
+    }
+
+    private static void store20RowsPerCategory() throws InterruptedException {
         try {
             insertProducts = connection.prepareStatement(insertStatement);
         } catch (SQLException e) {
@@ -46,7 +51,7 @@ public class FactualGrabber {
         int storedRows = 0;
 
         for (String categoryName : categories) {
-            Query query = getQuery(categoryName);
+            Query query = getQuery(categoryName, 0);
             ReadResponse response = factual.fetch(catalogName, query);
             fetchedRows += response.getIncludedRowCount();
 
@@ -67,10 +72,58 @@ public class FactualGrabber {
         System.out.println("Data stored successfully!");
     }
 
-    private static Query getQuery(String categoryName) {
+    private static void storeRowsByOffset(long offset) throws InterruptedException {
+        try {
+            insertProducts = ConnectionManager.getConnection(ConnectionManager.ConnectionType.factual_warehouse)
+                    .prepareStatement(insertStatement);
+        } catch (SQLException e) {
+            System.err.println("Exception during initializing database connection.");
+            e.printStackTrace();
+            System.exit(-2);
+        }
+
+        Factual factual = new Factual("xJ3uWDNzml71jEkpxwtbnVUJ7F7Gp5i8PfqbG504", "HonaHHNVJbBFrzjDRdIdd25bRtBixf8DE6Awvgiv");
+        String catalogName = "products-cpg-nutrition";
+
+        int fetchedRows = 0;
+        int storedRows = 0;
+        long _offset = offset;
+
+        for (String categoryName : categories) {
+            for (int i = 0; i < 5; i++) {
+                Query query = getQuery(categoryName, _offset);
+                //maximum page size, default value.
+                _offset += 20;
+                ReadResponse response = factual.fetch(catalogName, query);
+                fetchedRows += response.getIncludedRowCount();
+
+                try {
+                    storedRows += storeData(response);
+                } catch (SQLException e) {
+                    System.err.println("Fetched row count = " + fetchedRows);
+                    System.err.println("Stored row count = " + storedRows);
+                    System.err.println();
+                    e.printStackTrace();
+                    System.exit(-100);
+                }
+
+                System.out.println("Fetched row count = " + fetchedRows);
+                System.out.println("Stored row count = " + storedRows);
+                Thread.sleep(14000);
+            }
+            System.out.println("Offset for category " + categoryName + " = " + _offset);
+            _offset = offset;
+        }
+        System.out.println("Data stored successfully!");
+    }
+
+    private static Query getQuery(String categoryName, long offset) {
         Query query = new Query();
-        query = query.field("category").isEqual(categoryName).and(
-                query.field("upc").notBlank())
+        query = query
+                .offset(offset)
+                .field("category").isEqual(categoryName)
+                .and(
+                        query.field("upc").notBlank())
                 .or(
                         query.field("ingredients").notBlank(),
                         query.field("servings").notBlank(),

@@ -9,6 +9,15 @@ public class ConnectionManager {
     private static String dbUserName = "root";
     private static String dbPassword = "";
 
+    private static String whDbdbUrl = "jdbc:mysql://127.0.0.1:3306/factual_wh";
+    private static String whDbdbUserName = "root";
+    private static String whDbdbPassword = "";
+
+    public static enum ConnectionType {
+        factual,
+        factual_warehouse
+    }
+
     static {
         try {
             try {
@@ -26,7 +35,30 @@ public class ConnectionManager {
         }
     }
 
-    public static Connection getConnection(){
+    public static Connection getConnection() {
         return connection;
+    }
+
+    public static Connection getConnection(ConnectionType connectionType) {
+        switch (connectionType) {
+            case factual_warehouse:
+                return WhDbConnectionSingleton.connection;
+
+            default:
+                return connection;
+        }
+    }
+
+    private static class WhDbConnectionSingleton {
+        public static Connection connection;
+
+        static {
+            try {
+                connection = DriverManager.getConnection(whDbdbUrl, whDbdbUserName, whDbdbPassword);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 }

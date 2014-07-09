@@ -1,5 +1,4 @@
-Done: created table Category with CategoryId - CategoryName
-
+------------------------
 products-factual.impex
 
 $catalog-id=raleysProductCatalog
@@ -20,7 +19,7 @@ DEFAULT: unit = pieces, sellbyCode = E.
 \n
 ;code{=upc};name{=product_name};description{=product_name};ean{=ean13};approvalstatus{="approved"};unit{"oz"};sellbyCode{"E"};deptNumber{"9"};
 
-
+------------------------
 categories-factual.impex
 
 $contentCatalog=raleysContentCatalog
@@ -33,7 +32,7 @@ FORMAT:
 \n
 ;code{"s"+Category.categoryId};name{category};
 
-
+------------------------
 prodcat-factual.impex
 
 
@@ -48,23 +47,58 @@ INSERT_UPDATE CategoryProductRelation;$source;$target
 Format:
 ;{"s"+Category.categoryId};{upc};
 
-
+------------------------
 price-row-factual.impex
-
-E.G.: grocery store number
-{
-    $store1=420
-    $store2=421
-}
 
 TODO: Define algorithm for multi price row insertion
 
-"$catalog-id=raleysProductCatalog"
-"$catalog-version=Staged"
-"$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]"
-$store1=420
-$store2=421
-
 "INSERT_UPDATE RaleysPriceRow";"Product(code,$catalog_version)[unique=true]";"store(groceryStoreNo)[unique=true]";"dateRange[unique=true,dateformat=yyyyMMdd]";"minqtd";"price";"promoType";"promoForQuantity";"promoPrice";"promoStart";"promoEnd";"saveAmount";"promoPriceText";"aisleNumber";"aisleSide";"ageRestriction";"crvAmount";"salesTaxRate";"unit(code)[default=pieces]";"currency(isocode)[default=USD]";"net[default=true]";"$catalog_version"
-FORMAT:
-;{upc};{random: "420", "421"};{"20131127,20990101"};{"1"};{avg_price};{"0"};;;;;{".00"};{"You Save .00"};{"3"};{"B"};{"0"};{" 0.30"};{" 0.08500"}
+;885898000079;421;20131127,20990101;1;95.71;"x";"1";"90.00";"20131120";"20141212";"5.71";"You Save 5.71";3;B;0; 0.30; 0.08500;
+
+"Product(code,$catalog_version)[unique=true]" - upc = {885898000079}
+"store(groceryStoreNo)[unique=true]" - store number = 420 || 421
+"dateRange[unique=true,dateformat=yyyyMMdd]" - date range = 20131127,20990101
+"minqtd" - QUANTITY =1
+"price" - generated price = {"5.71"}
+"promoType" - promotion type = 1 || 2 || 3
+"promoForQuantity" = "1"
+"promoPrice" - generated price for promotion less then price = {"90.00"}
+"promoStart" - start date - "20131120"
+"promoEnd" - end date - "20141212"
+"saveAmount" - amount your saved = "price - promoPrice"
+"promoPriceText" - text = "You Save 'saveAmount'"
+//leave value as earlier
+"aisleNumber"
+"aisleSide"
+"ageRestriction"
+"crvAmount"
+"salesTaxRate"
+
+TODO
+------------------------
+packSize-facutal.impex
+
+$catalog-id=raleysProductCatalog
+$catalog-version=Staged
+$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]
+UPDATE Product;code[unique=true];packSize;extendedSize;uom;$catalog_version
+
+code = {upc}
+packSize = {servings}, null = {1}
+itemSize = {size[1]}/{servings}, null = {1}
+yom = {size[unit]}
+
+TODO
+------------------------
+file: value-prepared-factual.impex
+
+INSERT_UPDATE ValuePrepared; code[unique=true]; valuePreparedType;addedItem; servingSizeText; servingSizeUOM ; servingsPerContainer ;ean
+;0088395086526_0;0;;0.125;box;8;0088395086526
+
+code = {upc}_0
+valuePreparedType = "0"
+addedItem = ""
+servingSizeText = {size[1]}/{servings}, null = {1} //itemSize
+servingSizeUOM = {size[unit]} //yom
+servingsPerContainer = {servings}, null = {1} //packSize
+ean = {ean13}
