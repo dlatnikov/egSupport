@@ -210,6 +210,8 @@ public class DataExporter {
         List<Integer> storeIndexes = new ArrayList<>();
         storeIndexes.add(420); // default shop - should always exist
         storeIndexes.add(421);
+        storeIndexes.add(422);
+        storeIndexes.add(423);
 
         PromotionDO promotion;
         Double price;
@@ -671,8 +673,6 @@ public class DataExporter {
     private static String pricerowFileStaticHead = "\"$catalog-id=raleysProductCatalog\"\n" +
             "\"$catalog-version=Staged\"\n" +
             "\"$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]\"\n" +
-            "$store1=420\n" +
-            "$store2=421\n" +
             "\n" +
             "\"INSERT_UPDATE RaleysPriceRow\";\"Product(code,$catalog_version)[unique=true]\";\"store(groceryStoreNo)[unique=true]\";\"dateRange[unique=true,dateformat=yyyyMMdd]\";\"minqtd\";\"price\";\"promoType\";\"promoForQuantity\";\"promoPrice\";\"promoStart\";\"promoEnd\";\"saveAmount\";\"promoPriceText\";\"aisleNumber\";\"aisleSide\";\"ageRestriction\";\"crvAmount\";\"salesTaxRate\";\"unit(code)[default=pieces]\";\"currency(isocode)[default=USD]\";\"net[default=true]\";\"$catalog_version\"";
 
