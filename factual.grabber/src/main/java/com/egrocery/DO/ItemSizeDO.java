@@ -25,13 +25,28 @@ public class ItemSizeDO {
             result.packSize = "1";
             result.extendedSize = "1 " + yom;
         } else {
-            double sizeCount = Double.parseDouble(DataExporterUtils.getUnitCount(size)) /
-                    Double.parseDouble(servings);
-            sizeCount = sizeCount < 0.01 ? 0.01 : sizeCount;
-            DecimalFormat df = new DecimalFormat("##.##");
-            result.packSize = servings;
-            result.extendedSize = df.format(sizeCount) + " " + yom;
-            result.itemSize = df.format(sizeCount);
+            try {
+                double sizeCount = Double.parseDouble(DataExporterUtils.getUnitCount(size)) /
+                        Double.parseDouble(servings);
+
+                //check that sizeCount is a valid double
+                if (sizeCount == Double.POSITIVE_INFINITY ||
+                        sizeCount == Double.NEGATIVE_INFINITY ||
+                        sizeCount == Double.NaN) {
+                    throw new ArithmeticException();
+                }
+
+                sizeCount = sizeCount < 0.01 ? 0.01 : sizeCount;
+                DecimalFormat df = new DecimalFormat("##.##");
+                result.packSize = servings;
+                result.extendedSize = df.format(sizeCount) + " " + yom;
+                result.itemSize = df.format(sizeCount);
+                //for catching NumberFormatException or ArithmeticException
+            } catch (RuntimeException e) {
+                result.itemSize = "1";
+                result.packSize = "1";
+                result.extendedSize = "1 " + yom;
+            }
         }
         return result;
     }
