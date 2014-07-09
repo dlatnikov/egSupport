@@ -1,7 +1,9 @@
 package com.egrocery;
 
 import com.egrocery.DO.ImageDO;
+import com.egrocery.DO.ItemSizeDO;
 import com.egrocery.DO.PromotionDO;
+import com.egrocery.Util.DataExporterUtils;
 import com.google.api.client.repackaged.com.google.common.base.Strings;
 import com.mysql.jdbc.StringUtils;
 import org.apache.http.HttpResponse;
@@ -14,14 +16,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.sql.*;
-import java.text.DecimalFormat;
 import java.util.*;
 
 /**
  * Created by akolesnik on 6/20/14.
  */
 public class DataExporter {
-    private static String fileFolder = "/Users/Yama/work/gd/hybris/egrocery/impex_export";
+    private static String fileFolder = Config.getConfig().getImpexExportFolderName();
+
     private static String productsFileName = fileFolder + "/products-factual.impex";
     private static String categoriesFileName = fileFolder + "/categories-factual.impex";
     private static String prodcatFileName = fileFolder + "/prodcat-factual.impex";
@@ -33,7 +35,8 @@ public class DataExporter {
     private static String imagesPreparedFileName = fileFolder + "/product-images-factual.impex";
 
     public static void main(String[] args) throws SQLException, FileNotFoundException, URISyntaxException {
-//        fillCategoriesTable(ConnectionManager.getConnection());
+//        Used for one time run to fill category index table. This data will be used in other selects.
+//        DataExporterUtils.fillCategoriesTable(ConnectionManager.getConnection());
         writeToFile(productsFileName, productsFileStaticHead, "", productDataExtractor());
 //        writeToFile(categoriesFileName, categoriesFileStaticHead, "", categoryDataExtractor());
 //        writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
@@ -52,6 +55,7 @@ public class DataExporter {
 
     }
 
+    //Used to write all data about images into one file. Write sequence is important.
     private static void writeImages() throws SQLException, URISyntaxException, FileNotFoundException {
         Map<String, ImageDO> productCodeToImages = getValidImage();
 
@@ -79,8 +83,8 @@ public class DataExporter {
 
 
         Connection connection = ConnectionManager.getConnection();
-        Statement productStatement = connection.createStatement();
-        ResultSet resultSet = productStatement.executeQuery(basicProductDataQuery);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(basicProductDataQuery);
 
         while (resultSet.next()) {
             List<String> row = new ArrayList<>();
@@ -95,7 +99,7 @@ public class DataExporter {
 
             //sellbyCode
             String size = resultSet.getString("size");
-            String sellbyCode = getUnitType(getUnit(size));
+            String sellbyCode = DataExporterUtils.getUnitType(DataExporterUtils.getUnit(size));
             row.add(sellbyCode);
 
             row.add(resultSet.getString("deptNumber"));
@@ -127,8 +131,8 @@ public class DataExporter {
                 "from `products-cpg-nutrition`";
 
         Connection connection = ConnectionManager.getConnection();
-        Statement productStatement = connection.createStatement();
-        ResultSet resultSet = productStatement.executeQuery(basicCategoryDataQuery);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(basicCategoryDataQuery);
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
         while (resultSet.next()) {
@@ -161,8 +165,8 @@ public class DataExporter {
         String basicCategoryDataQuery = "select category_id, category_name from categories";
 
         Connection connection = ConnectionManager.getConnection();
-        Statement productStatement = connection.createStatement();
-        ResultSet resultSet = productStatement.executeQuery(basicCategoryDataQuery);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(basicCategoryDataQuery);
 
         while (resultSet.next()) {
             ArrayList<String> row = new ArrayList<>(2);
@@ -182,8 +186,8 @@ public class DataExporter {
                 "join `products-cpg-nutrition` p on c.category_name = p.category";
 
         Connection connection = ConnectionManager.getConnection();
-        Statement productStatement = connection.createStatement();
-        ResultSet resultSet = productStatement.executeQuery(basicProdcatDataQuery);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(basicProdcatDataQuery);
 
         while (resultSet.next()) {
             ArrayList<String> row = new ArrayList<>(2);
@@ -202,8 +206,8 @@ public class DataExporter {
         String basicProdcatDataQuery = "select upc, avg_price from `products-cpg-nutrition`";
 
         Connection connection = ConnectionManager.getConnection();
-        Statement productStatement = connection.createStatement();
-        ResultSet resultSet = productStatement.executeQuery(basicProdcatDataQuery);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(basicProdcatDataQuery);
 
         // seed is important to have repeatability
         Random random = new Random(1234);
@@ -305,31 +309,14 @@ public class DataExporter {
             String size = resultSet.getString("size");
             String servings = resultSet.getString("servings");
 
-            String itemSize;
-            String extendedSize;
-            String packSize;
+            String yom = DataExporterUtils.getUnit(size);
 
-            String yom = getUnit(size);
-
-            if (Strings.isNullOrEmpty(size) || Strings.isNullOrEmpty(servings)) {
-                itemSize = "1";
-                packSize = "1";
-                extendedSize = "1 " + yom;
-            } else {
-                double sizeCount = Double.parseDouble(getUnitCount(size)) /
-                        Double.parseDouble(servings);
-                sizeCount = sizeCount < 0.01 ? 0.01 : sizeCount;
-                DecimalFormat df = new DecimalFormat("##.##");
-                packSize = servings;
-                extendedSize = df.format(sizeCount) + " " + yom;
-                itemSize = df.format(sizeCount);
-            }
-
+            ItemSizeDO itemSizeDO = ItemSizeDO.getItemSize(size, servings, yom);
 
             row.add(code);
-            row.add(packSize);
-            row.add(itemSize);
-            row.add(extendedSize);
+            row.add(itemSizeDO.getPackSize());
+            row.add(itemSizeDO.getItemSize());
+            row.add(itemSizeDO.getExtendedSize());
 
             row.add(yom);
 
@@ -359,29 +346,16 @@ public class DataExporter {
             String size = resultSet.getString("size");
             String servings = resultSet.getString("servings");
 
-            String itemSize;
-            String packSize;
+            String yom = DataExporterUtils.getUnit(size);
 
-            String yom = getUnit(size);
-
-            if (Strings.isNullOrEmpty(size) || Strings.isNullOrEmpty(servings)) {
-                itemSize = "1";
-                packSize = "1";
-            } else {
-                double sizeCount = Double.parseDouble(getUnitCount(size)) /
-                        Double.parseDouble(servings);
-                sizeCount = sizeCount < 0.01 ? 0.01 : sizeCount;
-                DecimalFormat df = new DecimalFormat("##.##");
-                packSize = servings;
-                itemSize = df.format(sizeCount);
-            }
+            ItemSizeDO itemSizeDO = ItemSizeDO.getItemSize(size, servings, yom);
 
             row.add(code);
             row.add(valuePreparedType);
             row.add(addedItem);
-            row.add(itemSize);
+            row.add(itemSizeDO.getItemSize());
             row.add(yom);
-            row.add(packSize);
+            row.add(itemSizeDO.getPackSize());
             row.add(ean);
 
             rows.add(row);
@@ -466,7 +440,12 @@ public class DataExporter {
         return rows;
     }
 
+    //by default do not write valid image urls into DB.
     private static Map<String, ImageDO> getValidImage() throws SQLException, URISyntaxException {
+        return getValidImage(false);
+    }
+
+    private static Map<String, ImageDO> getValidImage(boolean isFillProductImagesTable) throws SQLException, URISyntaxException {
         Map result = new HashMap();
 
         String basicProductDataQuery = "select upc code, image_urls from `products-cpg-nutrition`";
@@ -475,8 +454,8 @@ public class DataExporter {
         PreparedStatement insertProductImage = ConnectionManager.getConnection().prepareStatement("insert into ProductImage (code, imageUrl) values (?, ?)");
 
         Connection connection = ConnectionManager.getConnection();
-        Statement productStatement = connection.createStatement();
-        ResultSet resultSet = productStatement.executeQuery(basicProductDataQuery);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(basicProductDataQuery);
 
         while (resultSet.next()) {
 
@@ -491,6 +470,7 @@ public class DataExporter {
                 continue;
             }
 
+            HttpClient client = HttpClients.createDefault();
 
             for (String url : urls) {
                 String formattedUrl = "";
@@ -499,19 +479,21 @@ public class DataExporter {
                     formattedUrl = url.substring(1, url.length() - 1);
                     getImage = new HttpGet(formattedUrl);
 
+                    //Catch any exception related to url/uri formatting. It could be caused by wrong url format in external catalog.
                 } catch (Exception e) {
                     continue;
                 }
 
                 try {
-                    HttpClient client = HttpClients.createDefault();
                     HttpResponse response = client.execute(getImage);
                     if (response.getStatusLine().getStatusCode() == 200) {
                         availableUrl = formattedUrl;
                         System.out.println("product : " + productCode + " , image url : " + availableUrl);
                         result.put(productCode, new ImageDO(productCode + ".image", availableUrl));
                         //for 1st run only - stores verified images url to db table.
-                        //fillProductImagesTable(productCode, availableUrl, insertProductImage);
+                        if(isFillProductImagesTable) {
+                            DataExporterUtils.fillProductImagesTable(productCode, availableUrl, insertProductImage);
+                        }
                         break;
                     }
                 } catch (IOException e) {
@@ -526,86 +508,13 @@ public class DataExporter {
 
     //End images data extractors
 
-    private static String getUnitCount(String size) {
-        if (Strings.isNullOrEmpty(size)) {
-            return "1";
-        }
-
-        String sz = size;
-
-        //Begin parsing formats: ["6 mg","180 count"], ["6 mg; 180 count"]
-        int delimiterIndex = size.indexOf(",") == -1 ? size.indexOf(";") == -1 ? -1 : size.indexOf(";") : size.indexOf(",");
-        if (delimiterIndex != -1) {
-            sz = sz.substring(0, delimiterIndex);
-        }
-        sz = sz.replace("\"", "").replace("[", "").replace("]", "");
-
-        int endIndex = sz.indexOf(" ");
-        //to avoid cases like: "0-30"
-        endIndex = sz.indexOf("-") == -1 ? endIndex : sz.indexOf("-");
-
-        //to avoid cases like: size = ["6","4 oz; 113 g; cup"]
-        if (endIndex != -1) {
-            sz = sz.substring(0, endIndex);
-        }
-
-        //End parsing
-
-        return sz;
-    }
-
-    private static String getUnit(String size) {
-        if (size == null) {
-            return "oz";
-        }
-
-        String sz = size;
-
-        //Begin parsing formats: ["6 mg","180 count"], ["6 mg; 180 count"]
-        int delimiterIndex = size.indexOf(",") == -1 ? size.indexOf(";") == -1 ? -1 : size.indexOf(";") : size.indexOf(",");
-        if (delimiterIndex != -1) {
-            sz = sz.substring(0, delimiterIndex);
-        }
-        sz = sz.replace("\"", "").replace("[", "").replace("]", "");
-        sz = sz.substring(sz.indexOf(" ") + 1, sz.length());
-        //End parsing
-
-        return sz;
-    }
-
-    private static String getUnitType(String unit) {
-        String unitType = "E";
-
-        List<String> unitWeightTypeList = new ArrayList<String>() {{
-            add("lb");
-            add("#");
-            add("oz");
-            add("mg");
-            add("g");
-            add("kg");
-        }};
-
-        if (unitWeightTypeList.contains(unit.toLowerCase())) {
-            return "W";
-        }
-
-        return unitType;
-    }
 
     private static void writeToFile(String fileName, String staticHead, String staticHeadDelimiter, List<List<String>> rows)
             throws FileNotFoundException {
         PrintWriter printWriter = new PrintWriter(fileName);
+
         writeToFile(printWriter, staticHead, staticHeadDelimiter, rows);
-//        file.println(staticHead);
-//        file.print(staticHeadDelimiter);
-//
-//        for (List<String> row : rows) {
-//            for (String cell : row) {
-//                file.print(";");
-//                file.print(cell);
-//            }
-//            file.println(";");
-//        }
+
         printWriter.flush();
         printWriter.close();
     }
@@ -626,30 +535,6 @@ public class DataExporter {
         file.close();
     }
 
-    private static void fillCategoriesTable(Connection connection) throws SQLException {
-        PreparedStatement selectCategories = connection.prepareStatement("select distinct category from `products-cpg-nutrition`");
-        PreparedStatement insertCategories = connection.prepareStatement("insert into categories (category_id, category_name) values (?, ?)");
-        ResultSet categories = selectCategories.executeQuery();
-        int categoryIndex = 0;
-        while (categories.next()) {
-            categoryIndex++;
-            String categoryName = categories.getObject("category").toString();
-            insertCategories.setObject(1, categoryIndex, Types.INTEGER);
-            insertCategories.setObject(2, categoryName, Types.VARCHAR);
-            insertCategories.executeUpdate();
-        }
-    }
-
-    private static void fillProductImagesTable(String code, String url, PreparedStatement insertCategories) {
-        try {
-            insertCategories.setObject(1, code, Types.VARCHAR);
-            insertCategories.setObject(2, url, Types.VARCHAR);
-            insertCategories.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-    }
 
     private static String productsFileStaticHead = "$catalog-id=raleysProductCatalog\n" +
             "$catalog-version=Staged\n" +
