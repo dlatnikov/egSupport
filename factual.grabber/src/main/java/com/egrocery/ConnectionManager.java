@@ -5,9 +5,16 @@ import java.sql.*;
 public class ConnectionManager {
 
     private static Connection connection = null;
-    private static String dbUrl = "jdbc:mysql://127.0.0.1:3306/factual_price_fix";
-    private static String dbUserName = "root";
-    private static String dbPassword = "";
+    private static String dbUrl = Config.getConfig().getFactualDbConnectionString();
+    private static String dbUserName = Config.getConfig().getDbUserName();
+    private static String dbPassword = Config.getConfig().getDbPassword();
+
+    private static String whDbdbUrl = Config.getConfig().getFactualWhConnectionString();
+
+    public static enum ConnectionType {
+        factual,
+        factual_warehouse
+    }
 
     static {
         try {
@@ -26,7 +33,30 @@ public class ConnectionManager {
         }
     }
 
-    public static Connection getConnection(){
+    public static Connection getConnection() {
         return connection;
+    }
+
+    public static Connection getConnection(ConnectionType connectionType) {
+        switch (connectionType) {
+            case factual_warehouse:
+                return WhDbConnectionSingleton.connection;
+
+            default:
+                return connection;
+        }
+    }
+
+    private static class WhDbConnectionSingleton {
+        public static Connection connection;
+
+        static {
+            try {
+                connection = DriverManager.getConnection(whDbdbUrl, dbUserName, dbPassword);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 }
