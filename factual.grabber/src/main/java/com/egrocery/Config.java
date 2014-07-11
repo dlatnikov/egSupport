@@ -6,7 +6,9 @@ package com.egrocery;
 
 import com.mysql.jdbc.StringUtils;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class Config {
@@ -30,7 +32,16 @@ public class Config {
 
     private Config() throws IOException {
         properties = new Properties();
-        properties.load(Config.class.getClassLoader().getResourceAsStream("config.properties"));
+        InputStream input = new FileInputStream("./src/resources/config.properties");
+        properties.load(input);
+
+        if (input != null) {
+            try {
+                input.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         for (Object key : properties.keySet()) {
             String systemPropertyValue = System.getProperty((String) key);
             if (!StringUtils.isNullOrEmpty(systemPropertyValue)) {
