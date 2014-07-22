@@ -34,25 +34,35 @@ public class DataExporter {
 
     private static String imagesPreparedFileName = fileFolder + "/product-images-factual.impex";
 
+    // 420 - default shop. Should always exist
+    private static List<String> storeIndexes = Arrays.asList("420", "421", "422", "423");
+
     public static void main(String[] args) throws SQLException, FileNotFoundException, URISyntaxException {
 //        Used for one time run to fill category index table. This data will be used in other selects.
 //        DataExporterUtils.fillCategoriesTable(ConnectionManager.getConnection());
         writeToFile(productsFileName, productsFileStaticHead, "", productDataExtractor());
-//        writeToFile(categoriesFileName, categoriesFileStaticHead, "", categoryDataExtractor());
-//        writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
-//        writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
-//        writeToFile(sizeFacetFileName, sizeFacetFileStaticHead, "", sizeFacetDataExtractor());
-//        writeToFile(nutrientsFileName, nutrientFileStaticHead, "", nutrientDataExtractor());
-
+        writeToFile(categoriesFileName, categoriesFileStaticHead, "", categoryDataExtractor());
+        writeToFile(prodcatFileName, prodcatFileStaticHead, "", prodcatDataExtractor());
         writeToFile(pricerowFileName, pricerowFileStaticHead, "", pricerowDataExtractor());
-//
         writeToFile(sizeFacetFileName, sizeFacetFileStaticHead, "", sizeFacetDataExtractor());
+        writeToFile(nutrientsFileName, nutrientFileStaticHead, "", nutrientDataExtractor());
+
         writeToFile(valuePreparedFileName, valuePreparedFileStaticHead, "", valuePreparedDataExtractor());
 
+        // Hard coded products
+        writeToFile(fileFolder + HardCodedProducts.getProductsFileName(), HardCodedProducts.getProductFileHeader(), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getCategoriesFileName(), HardCodedProducts.getCategoryFileHeader(), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getProdCatFileName(), HardCodedProducts.getProdCatFileHeader(), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getPriceRowFileName(), HardCodedProducts.getPriceRowFileHeader(storeIndexes), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getSizeFacetFileName(), HardCodedProducts.getSizeFileHeader(true), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getAvgWeightFileName(), HardCodedProducts.getSizeFileHeader(false), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getValuePreparedFileName(), HardCodedProducts.getValuePreparedFileHeader(), "", null);
+        writeToFile(fileFolder + HardCodedProducts.getNutrientsFileName(), HardCodedProducts.getNutrientsFileHeader(), "", null);
+
+
         //images writing
-
-//        writeImages();
-
+        //writeImages();
+        writeImagesPod();
     }
 
     //Used to write all data about images into one file. Write sequence is important.
@@ -73,6 +83,25 @@ public class DataExporter {
 
         imagesPrintWriter.flush();
         imagesPrintWriter.close();
+    }
+
+    //Used to write all data about images into one file. Write sequence is important.
+    private static void writeImagesPod() throws FileNotFoundException{
+        PrintWriter podImagesPrintWriter = new PrintWriter(fileFolder + HardCodedProducts.getImagesPreparedFileName());
+
+        writeToFile(podImagesPrintWriter, media90x90StaticHead, "", HardCodedProducts.fakeMediaDataExtractor(0,""));
+        writeToFile(podImagesPrintWriter, media200x200StaticHead, "", HardCodedProducts.fakeMediaDataExtractor(0, ""));
+        writeToFile(podImagesPrintWriter, media600x600StaticHead, "", HardCodedProducts.fakeMediaDataExtractor(0, ""));
+
+        writeToFile(podImagesPrintWriter, mediaContainerStaticHead, "", HardCodedProducts.fakeMediaDataExtractor(1, ""));
+
+        writeToFile(podImagesPrintWriter, productThmbnailStaticHead, "", HardCodedProducts.fakeMediaDataExtractor(2, "90WX90H/"));
+        writeToFile(podImagesPrintWriter, productPictureStaticHead, "", HardCodedProducts.fakeMediaDataExtractor(2, "200WX200H/"));
+        writeToFile(podImagesPrintWriter, productGallereyImagesStaticHead, "", HardCodedProducts.fakeMediaDataExtractor(2, ""));
+
+        podImagesPrintWriter.flush();
+        podImagesPrintWriter.close();
+
     }
 
     private static List<List<String>> productDataExtractor() throws SQLException {
@@ -211,23 +240,18 @@ public class DataExporter {
 
         // seed is important to have repeatability
         Random random = new Random(1234);
-        List<Integer> storeIndexes = new ArrayList<>();
-        storeIndexes.add(420); // default shop - should always exist
-        storeIndexes.add(421);
-        storeIndexes.add(422);
-        storeIndexes.add(423);
 
         PromotionDO promotion;
         Double price;
 
         while (resultSet.next()) {
-            for (Integer store : storeIndexes) {
+            for (String store : storeIndexes) {
                 ArrayList<String> row = new ArrayList<>();
                 //    "Product(code,$catalog_version)[unique=true]" - upc = {885898000079}
                 row.add(resultSet.getString("upc"));
                 //    "store(groceryStoreNo)[unique=true]" - store number = 420 || 421
                 //row.add(Integer.valueOf(df.format((store1 + (store2 - store1) * random.nextDouble()))).toString());
-                row.add(store.toString());
+                row.add(store);
                 //    "dateRange[unique=true,dateformat=yyyyMMdd]" - date range = 20131127,20990101
                 row.add("20131127,20990101");
                 //    "minqtd" - QUANTITY =1
@@ -279,7 +303,7 @@ public class DataExporter {
 
                 // necessary for demo
                 // two products will be not available in one store
-                if (!store.equals(420) &&
+                if (!store.equals("420") &&
                         ((resultSet.getString("upc").equals("070569272408")) || (resultSet.getString("upc").equals("072310008236")))) {
                     continue;
                 }
@@ -524,15 +548,15 @@ public class DataExporter {
         file.println(staticHead);
         file.print(staticHeadDelimiter);
 
-        for (List<String> row : rows) {
-            for (String cell : row) {
-                file.print(";");
-                file.print(cell);
+        if (rows != null) {
+            for (List<String> row : rows) {
+                for (String cell : row) {
+                    file.print(";");
+                    file.print(cell);
+                }
+                file.println(";");
             }
-            file.println(";");
         }
-        file.flush();
-        file.close();
     }
 
 
@@ -565,7 +589,7 @@ public class DataExporter {
             "$catalog-version=Staged\n" +
             "$catalog_version=catalogversion(catalog(id[default=$catalog-id]),version[default=$catalog-version])[unique=true,default=$catalog-id:$catalog-version]\n" +
             "\n" +
-            "UPDATE Product;code[unique=true];packSize;extendedSize;uom;$catalog_version\n";
+            "UPDATE Product;code[unique=true];packSize;itemSize;extendedSize;uom;$catalog_version\n";
 
     private static String valuePreparedFileStaticHead = "INSERT_UPDATE ValuePrepared; code[unique=true]; valuePreparedType;addedItem; servingSizeText; servingSizeUOM ; servingsPerContainer ;ean\n";
 
